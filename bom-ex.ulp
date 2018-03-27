@@ -347,7 +347,7 @@ string HelpTextEN =
 //////////////////////////////////////////////////////////////////////////////
 //
 
-string strVersion = "1.69";
+string strVersion = "1.69_MC";
 
 int nPartCount;
 int nBOMCount;
@@ -360,7 +360,7 @@ int PartDNP[];
 int PartQty[];
 
 numeric string PartNum[], PartName[], PartVal[], PartAttr[], 
-               PartDev[], PartPkg[], PartDesc[];
+               PartDev[], PartPkg[], PartDesc[], PartLibrary[], PartPosition[], PartOrientation[];
 
 numeric string PartNumPrev[];
 
@@ -591,12 +591,14 @@ void AddPartData(UL_PART P, UL_INSTANCE I)
                 // set to nullkey if empty PARTNO attribute
                 if (partnum == "")
                     partnum = nullKey;
+                attrs += "\"" +aname +"\":\"" + A.value + "\"";
             }
             else if (aname == "VALUE")
             {
                 // Attribute VALUE overrides native value
                 if (strlen(avalue))
                     val = avalue;
+                attrs += "\"" +aname +"\":\"" + A.value + "\"";
             }
             else if (aname == "BOM")
             {
@@ -605,6 +607,7 @@ void AddPartData(UL_PART P, UL_INSTANCE I)
                     // Exclude part from BOM?
                     if (avalue == "EXCLUDE")
                         exclude = 1;
+                    attrs += "\"" +aname +"\":\"" + A.value + "\"";
                 }
             }
             else if (aname == "DNP")
@@ -616,24 +619,27 @@ void AddPartData(UL_PART P, UL_INSTANCE I)
                         exclude = 1;
                     }
                 }
+                attrs += "\"" +aname +"\":\"" + A.value + "\"";
             }
             else if (aname == "QTY")
             {
                 // Exclude part from BOM?
                 qty = strtol(A.value);
+                attrs += "\"" +aname +"\":\"" + A.value + "\"";
             }
             else if (aname == "DESC")
             {
                 // Part description override (mainly for BOM-ENTRY devices)
                 desc = TrimWhiteSpace(A.value);
+                attrs += "\"" +aname +"\":\"" + A.value + "\"";
             }
             else
             {
-                if (IsKnownAttribute(aname))
+                //if (IsKnownAttribute(aname))
                 {
                     if (strlen(attrs))
-                        attrs += "/";
-                    attrs += A.value;
+                        attrs += ";";
+                    attrs += "\"" +aname +"\":\"" + A.value + "\"";
                 }
             }
         }
@@ -667,6 +673,7 @@ void AddPartData(UL_PART P, UL_INSTANCE I)
                     PartDev[nPartCount]     = P.device.name;
                     PartPkg[nPartCount]     = (P.device.package) ? P.device.package.name : "*";
                     PartDesc[nPartCount]    = (desc != "") ? desc : P.device.headline;
+					PartLibrary[nPartCount] = P.device.library;
                     PartDNP[nPartCount]     = dnp;
                     PartQty[nPartCount]     = qty;
                     PartModule[nPartCount]  = (P.module) ? P.module.name : "";
@@ -768,18 +775,22 @@ void GeneratePartList(void)
 {
     int NumLines = 0;
     //XXX column sequence?
-    Lines[NumLines++] = "Part\tValue\tAttributes\tPackage\tDescription\tPart Num" + DatabaseHeader();
+    Lines[NumLines++] = "Part\tValue\tPackage\tDevice\tDescription\tLibrary\tSheet\tAttributes\tPart Num" + DatabaseHeader();
 
     for (int i=0; i < nPartCount; i++)
     {
         // append (DNP) suffix on part name if needed
         string partname;
         partname = PartName[i];
+		int number = PartSheet[i];
+		string partSheetNbr;
+		sprintf(partSheetNbr, "%d", number); 
         if (PartDNP[i])
-            partname += dnpSuffix;
-
-        Lines[NumLines] = partname + "\t" + PartVal[i] + "\t" +
-                          PartAttr[i] + "\t" + PartPkg[i] + "\t" + PartDesc[i] + "\t" + PartNum[i];
+		{
+            //partname += dnpSuffix;
+		}
+        Lines[NumLines] = partname + "\t" + PartVal[i] + "\t" + PartPkg[i] + "\t" + PartDev[i]+ "\t" + PartDesc[i] + "\t" + PartLibrary[i] + "\t" + partSheetNbr+  "\t" +
+                          PartAttr[i] + "\t" + PartNum[i];
 
         if (Database[0])
         {
@@ -805,8 +816,8 @@ void GenerateValueList(void)
     int Index[];
 
     //XXX column sequence?
-    Lines[NumLines++] = "Qty\tValue\tPart Num\tPackage\tParts" + DatabaseHeader();
-
+    Lines[NumLines++] = "Qty\tValue\tPart Number\tPackage\tDevice\tDescription\tLibrary\tAttributes\tParts name" + DatabaseHeader();
+ 
     sort(nPartCount, Index, PartVal, PartNum, PartDev, PartName);
     
     for (int n1 = 0, n2 = 0; ++n2 <= nPartCount;)
@@ -856,15 +867,15 @@ void GenerateValueList(void)
             uqty = PartQty[i1];
 
         sprintf(Quantity, "%d", uqty);
-        Lines[NumLines] = Quantity + "\t" + PartVal[i1] + "\t" + PartNum[i1] + "\t" + PartPkg[i1] + "\t";
-
+        Lines[NumLines] = Quantity + "\t" + PartVal[i1]+ "\t" + PartNum[i1]  + "\t" + PartPkg[i1] + "\t" + PartDev[i1] + "\t" + PartDesc[i1] + "\t" + PartLibrary[i1] + "\t" + PartAttr[i1] + "\t";
+						  
         for (;;)
         {
             // append (DNP) suffix on part name if needed
             string partname;
             partname = PartName[i1];
-            if (PartDNP[i1])
-                partname += dnpSuffix;
+            //if (PartDNP[i1])
+            //    partname += dnpSuffix;
 
             Lines[NumLines] += partname;
 
@@ -1556,7 +1567,7 @@ void EditPartSet(void)
             string a[];
             string b[];
             strsplit(a, Lines[Selected], '\t'); // Column 5 Lines[] contains the part-id!
-            int n = strsplit(b, a[4], ',');     // First part in list
+            int n = strsplit(b, a[8], ',');     // First part in list
             string partname = b[0];
             
             // we have to strip off any (DNP) suffix from the part name
@@ -1638,7 +1649,7 @@ void ClearPartNumberSet(void)
         string a[];
         string b[];
         strsplit(a, Lines[Selected], '\t'); // Column 5 Lines[] contains the part-id!
-        int n = strsplit(b, a[4], ',');     // First part in list
+        int n = strsplit(b, a[8], ',');     // First part in list
         string partname;
 
         if (n > 0)
