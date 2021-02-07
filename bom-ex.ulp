@@ -591,14 +591,14 @@ void AddPartData(UL_PART P, UL_INSTANCE I)
                 // set to nullkey if empty PARTNO attribute
                 if (partnum == "")
                     partnum = nullKey;
-                attrs += "\"" +aname +"\":\"" + A.value + "\"";
+                attrs += "\"" +aname +"\":\"" + A.value + "\";";
             }
             else if (aname == "VALUE")
             {
                 // Attribute VALUE overrides native value
                 if (strlen(avalue))
                     val = avalue;
-                attrs += "\"" +aname +"\":\"" + A.value + "\"";
+                attrs += "\"" +aname +"\":\"" + A.value + "\";";
             }
             else if (aname == "BOM")
             {
@@ -607,7 +607,7 @@ void AddPartData(UL_PART P, UL_INSTANCE I)
                     // Exclude part from BOM?
                     if (avalue == "EXCLUDE")
                         exclude = 1;
-                    attrs += "\"" +aname +"\":\"" + A.value + "\"";
+                    attrs += "\"" +aname +"\":\"" + A.value + "\";";
                 }
             }
             else if (aname == "DNP")
@@ -619,19 +619,19 @@ void AddPartData(UL_PART P, UL_INSTANCE I)
                         exclude = 1;
                     }
                 }
-                attrs += "\"" +aname +"\":\"" + A.value + "\"";
+                attrs += "\"" +aname +"\":\"" + A.value + "\";";
             }
             else if (aname == "QTY")
             {
                 // Exclude part from BOM?
                 qty = strtol(A.value);
-                attrs += "\"" +aname +"\":\"" + A.value + "\"";
+                attrs += "\"" +aname +"\":\"" + A.value + "\";";
             }
             else if (aname == "DESC")
             {
                 // Part description override (mainly for BOM-ENTRY devices)
                 desc = TrimWhiteSpace(A.value);
-                attrs += "\"" +aname +"\":\"" + A.value + "\"";
+                attrs += "\"" +aname +"\":\"" + A.value + "\";";
             }
             else
             {
@@ -639,7 +639,7 @@ void AddPartData(UL_PART P, UL_INSTANCE I)
                 {
                     if (strlen(attrs))
                         attrs += ";";
-                    attrs += "\"" +aname +"\":\"" + A.value + "\"";
+                    attrs += "\"" +aname +"\":\"" + A.value + "\";";
                 }
             }
         }
